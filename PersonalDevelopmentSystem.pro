@@ -16,23 +16,18 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # 适配 Qt 6.0 及以上
 
 # 源码文件
 SOURCES += \
-
     main.cpp \
     mainwindow.cpp \
-    coursepage.cpp
+    coursepage.cpp \
     experiencepage.cpp \
     awardpage.cpp
 
 
 # 头文件
-HEADERS += \
-
-   
-    coursepage.h
+HEADERS += \  
+    coursepage.h \
     mainwindow.h \
     experiencepage.h \
-    
-
     awardpage.h
 
 
@@ -40,8 +35,6 @@ HEADERS += \
 FORMS += \
     mainwindow.ui \
     experiencepage.ui \
-    awardpage.ui
-    experiencepage.ui
     awardpage.ui
 
 # 编译器默认配置

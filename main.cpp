@@ -49,5 +49,4 @@ int main(int argc, char *argv[])
     std::cout << "输入回车退出";
     std::cin.get();
     return 0;
->>>>>>> origin/feature-db
 }

@@ -1,9 +1,3 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2026-04-02T14:35:33
-#
-#-------------------------------------------------
-
 QT += core gui widgets sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -36,10 +30,5 @@ FORMS += \
     experiencepage.ui \
     awardpage.ui
 
-
-# 编译器默认配置
 CONFIG += console
 CONFIG -= app_bundle
-
-
-

@@ -23,42 +23,66 @@ bool DatabaseManager::initDatabase(const QString& path) {
     return true;
 }
 
+// 辅助：为已有表添加新列（如果不存在）
+void DatabaseManager::addColumnIfMissing(const QString& table, const QString& columnDef) {
+    QSqlQuery q = executeSelect("PRAGMA table_info(" + table + ")");
+    QString colName = columnDef.split(' ').first();
+    while (q.next()) {
+        if (q.value(1).toString() == colName) return;
+    }
+    executeQuery("ALTER TABLE " + table + " ADD COLUMN " + columnDef);
+}
+
 bool DatabaseManager::createTables() {
     if (!m_isOpen) return false;
 
+    // 1. course 表（增加 score 和 semester 列）
     QString sqlCourse = R"(
         CREATE TABLE IF NOT EXISTS course (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             credit REAL NOT NULL,
-            gradePoint REAL NOT NULL
+            score REAL,
+            semester TEXT
         );
     )";
     if (!executeQuery(sqlCourse)) return false;
+    // 确保新列存在（兼容旧数据库）
+    addColumnIfMissing("course", "score REAL");
+    addColumnIfMissing("course", "semester TEXT");
 
+    // 2. experience 表（增加 type 和 role 列）
     QString sqlExperience = R"(
         CREATE TABLE IF NOT EXISTS experience (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT,
             title TEXT NOT NULL,
-            description TEXT,
-            date TEXT
+            date TEXT,
+            role TEXT,
+            description TEXT
         );
     )";
     if (!executeQuery(sqlExperience)) return false;
+    addColumnIfMissing("experience", "type TEXT");
+    addColumnIfMissing("experience", "role TEXT");
 
+    // 3. award 表（增加 level 列）
     QString sqlAward = R"(
         CREATE TABLE IF NOT EXISTS award (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
-            description TEXT,
-            date TEXT
+            level TEXT,
+            date TEXT,
+            description TEXT
         );
     )";
     if (!executeQuery(sqlAward)) return false;
+    addColumnIfMissing("award", "level TEXT");
 
     return true;
 }
 
+// ---------- 底层通用方法 ----------
 bool DatabaseManager::executeQuery(const QString& sql) {
     QSqlQuery query(m_db);
     if (!query.exec(sql)) {
@@ -91,4 +115,71 @@ QSqlQuery DatabaseManager::executeSelect(const QString& sql, const QVariantList&
         qDebug() << "查询执行失败:" << query.lastError().text();
     }
     return query;
+}
+
+// ---------- 课程业务接口 ----------
+bool DatabaseManager::addCourse(const QString& name, double credit, double score, const QString& semester) {
+    return executeQuery("INSERT INTO course (name, credit, score, semester) VALUES (?, ?, ?, ?)",
+                        {name, credit, score, semester});
+}
+
+QSqlQuery DatabaseManager::getAllCourses() {
+    return executeSelect("SELECT id, name, credit, score, semester FROM course ORDER BY id");
+}
+
+bool DatabaseManager::deleteCourse(int id) {
+    return executeQuery("DELETE FROM course WHERE id = ?", {id});
+}
+
+int DatabaseManager::getCourseCount() {
+    QSqlQuery q = executeSelect("SELECT COUNT(*) FROM course");
+    if (q.next()) return q.value(0).toInt();
+    return 0;
+}
+
+// ---------- 经历业务接口 ----------
+bool DatabaseManager::addExperience(const QString& type, const QString& title, const QString& date,
+                                    const QString& role, const QString& description) {
+    return executeQuery("INSERT INTO experience (type, title, date, role, description) VALUES (?, ?, ?, ?, ?)",
+                        {type, title, date, role, description});
+}
+
+QSqlQuery DatabaseManager::getAllExperiences() {
+    return executeSelect("SELECT id, type, title, date, role, description FROM experience ORDER BY id");
+}
+
+bool DatabaseManager::deleteExperience(int id) {
+    return executeQuery("DELETE FROM experience WHERE id = ?", {id});
+}
+
+int DatabaseManager::getExperienceCount() {
+    QSqlQuery q = executeSelect("SELECT COUNT(*) FROM experience");
+    if (q.next()) return q.value(0).toInt();
+    return 0;
+}
+
+bool DatabaseManager::hasInternship() {
+    QSqlQuery q = executeSelect("SELECT COUNT(*) FROM experience WHERE type = '实习'");
+    if (q.next()) return q.value(0).toInt() > 0;
+    return false;
+}
+
+// ---------- 奖项业务接口 ----------
+bool DatabaseManager::addAward(const QString& title, const QString& level, const QString& date, const QString& description) {
+    return executeQuery("INSERT INTO award (title, level, date, description) VALUES (?, ?, ?, ?)",
+                        {title, level, date, description});
+}
+
+QSqlQuery DatabaseManager::getAllAwards() {
+    return executeSelect("SELECT id, title, level, date, description FROM award ORDER BY id");
+}
+
+bool DatabaseManager::deleteAward(int id) {
+    return executeQuery("DELETE FROM award WHERE id = ?", {id});
+}
+
+int DatabaseManager::getAwardCount() {
+    QSqlQuery q = executeSelect("SELECT COUNT(*) FROM award");
+    if (q.next()) return q.value(0).toInt();
+    return 0;
 }

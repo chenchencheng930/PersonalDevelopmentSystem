@@ -3,7 +3,6 @@
 # Project created by QtCreator 2026-04-02T14:35:33
 #
 #-------------------------------------------------
-
 QT += core gui sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -37,3 +36,4 @@ HEADERS += \
 FORMS += \
         mainwindow.ui
 CONFIG += console
+CONFIG -= app_bundle

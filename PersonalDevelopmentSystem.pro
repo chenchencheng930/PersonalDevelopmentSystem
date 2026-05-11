@@ -15,7 +15,8 @@ SOURCES += \
     experiencepage.cpp \
     awardpage.cpp \
     databasemanager.cpp \
-    gpacalculator.cpp
+    gpacalculator.cpp \
+    advicepage.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -23,7 +24,8 @@ HEADERS += \
     experiencepage.h \
     awardpage.h \
     databasemanager.h \
-    gpacalculator.h
+    gpacalculator.h \
+    advicepage.h
 
 FORMS += \
     mainwindow.ui \
@@ -32,4 +34,3 @@ FORMS += \
 
 CONFIG += console
 CONFIG -= app_bundle
-

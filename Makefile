@@ -210,6 +210,7 @@ Makefile: PersonalDevelopmentSystem.pro D:/QT/5.9.1/mingw53_32/mkspecs/win32-g++
 		D:/QT/5.9.1/mingw53_32/mkspecs/features/qt_config.prf \
 		D:/QT/5.9.1/mingw53_32/mkspecs/win32-g++/qmake.conf \
 		D:/QT/5.9.1/mingw53_32/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		D:/QT/5.9.1/mingw53_32/mkspecs/features/exclusive_builds.prf \
 		D:/QT/5.9.1/mingw53_32/mkspecs/features/toolchain.prf \
 		D:/QT/5.9.1/mingw53_32/mkspecs/features/default_pre.prf \
@@ -387,6 +388,7 @@ D:/QT/5.9.1/mingw53_32/mkspecs/features/qt_functions.prf:
 D:/QT/5.9.1/mingw53_32/mkspecs/features/qt_config.prf:
 D:/QT/5.9.1/mingw53_32/mkspecs/win32-g++/qmake.conf:
 D:/QT/5.9.1/mingw53_32/mkspecs/features/spec_post.prf:
+.qmake.stash:
 D:/QT/5.9.1/mingw53_32/mkspecs/features/exclusive_builds.prf:
 D:/QT/5.9.1/mingw53_32/mkspecs/features/toolchain.prf:
 D:/QT/5.9.1/mingw53_32/mkspecs/features/default_pre.prf:

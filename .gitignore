@@ -1,0 +1,17 @@
+# Qt 生成的构建文件
+Makefile*
+*.o
+*.exe
+*.user
+*.pro.user
+debug/
+release/
+
+# 数据库文件（本地数据，不应提交）
+*.db
+*.sqlite
+
+# 其他编译产物
+moc_*
+ui_*
+qrc_*

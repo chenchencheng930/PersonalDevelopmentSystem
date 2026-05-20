@@ -22,6 +22,8 @@ public:
 private slots:
     void switchPage(int index);
     void refreshDashboard();
+    void exportData();
+    void exportResume();
 
 private:
     void setupUi();

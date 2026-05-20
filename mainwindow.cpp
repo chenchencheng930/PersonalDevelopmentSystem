@@ -11,6 +11,15 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QFrame>
+#include <QFileDialog>
+#include <QFile>
+#include <QTextStream>
+#include <QSqlQuery>
+#include <QSqlRecord>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -55,6 +64,7 @@ void MainWindow::setupUi()
 
     m_stack->setCurrentIndex(0);
     updateButtonStyles(0);
+    refreshDashboard();
 }
 
 QWidget* MainWindow::createSidebar()
@@ -164,6 +174,31 @@ QWidget* MainWindow::createDashboard()
     statsRow->addWidget(c4.frame);
     layout->addLayout(statsRow);
 
+    // Export buttons
+    QHBoxLayout *btnRow = new QHBoxLayout;
+    btnRow->setSpacing(10);
+
+    QPushButton *btnExport = new QPushButton("导出数据 (JSON)");
+    btnExport->setStyleSheet(
+        "QPushButton { background: #3498db; color: white; border: none;"
+        "border-radius: 6px; padding: 10px 20px; font-size: 14px; }"
+        "QPushButton:hover { background: #2980b9; }");
+    btnExport->setCursor(Qt::PointingHandCursor);
+    connect(btnExport, &QPushButton::clicked, this, &MainWindow::exportData);
+
+    QPushButton *btnResume = new QPushButton("导出个人简历 (HTML)");
+    btnResume->setStyleSheet(
+        "QPushButton { background: #27ae60; color: white; border: none;"
+        "border-radius: 6px; padding: 10px 20px; font-size: 14px; }"
+        "QPushButton:hover { background: #219a52; }");
+    btnResume->setCursor(Qt::PointingHandCursor);
+    connect(btnResume, &QPushButton::clicked, this, &MainWindow::exportResume);
+
+    btnRow->addWidget(btnExport);
+    btnRow->addWidget(btnResume);
+    btnRow->addStretch();
+    layout->addLayout(btnRow);
+
     // Advice summary
     QLabel *adviceTitle = new QLabel("成长建议摘要");
     adviceTitle->setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50; margin-top: 10px;");
@@ -188,7 +223,14 @@ void MainWindow::switchPage(int index)
 
     if (index == 0) {
         refreshDashboard();
+    } else if (index == 1) {
+        // refresh course page data
+    } else if (index == 2) {
+        m_experiencePage->loadExperiences();
+    } else if (index == 3) {
+        m_awardPage->loadAwards();
     } else if (index == 4) {
+        refreshDashboard();
         m_advicePage->refresh();
     }
 }
@@ -229,4 +271,203 @@ void MainWindow::updateButtonStyles(int activeIndex)
     for (int i = 0; i < m_navButtons.size(); ++i) {
         m_navButtons[i]->setChecked(i == activeIndex);
     }
+}
+
+void MainWindow::exportData()
+{
+    QString fileName = QFileDialog::getSaveFileName(
+        this, "导出数据", "personal_development_data.json",
+        "JSON Files (*.json)");
+
+    if (fileName.isEmpty()) return;
+
+    QJsonObject root;
+
+    // 课程数据
+    QJsonArray courses;
+    QSqlQuery courseQuery = GpaCalculator::instance().getAllCourses();
+    while (courseQuery.next()) {
+        QJsonObject c;
+        c["id"] = courseQuery.value("id").toInt();
+        c["name"] = courseQuery.value("name").toString();
+        c["credit"] = courseQuery.value("credit").toDouble();
+        c["score"] = courseQuery.value("score").toDouble();
+        c["semester"] = courseQuery.value("semester").toString();
+        courses.append(c);
+    }
+    root["courses"] = courses;
+
+    // 经历数据
+    QJsonArray experiences;
+    QSqlQuery expQuery = GpaCalculator::instance().getAllExperiences();
+    while (expQuery.next()) {
+        QJsonObject e;
+        e["id"] = expQuery.value("id").toInt();
+        e["type"] = expQuery.value("type").toString();
+        e["title"] = expQuery.value("title").toString();
+        e["date"] = expQuery.value("date").toString();
+        e["role"] = expQuery.value("role").toString();
+        e["description"] = expQuery.value("description").toString();
+        experiences.append(e);
+    }
+    root["experiences"] = experiences;
+
+    // 奖项数据
+    QJsonArray awards;
+    QSqlQuery awardQuery = GpaCalculator::instance().getAllAwards();
+    while (awardQuery.next()) {
+        QJsonObject a;
+        a["id"] = awardQuery.value("id").toInt();
+        a["title"] = awardQuery.value("title").toString();
+        a["level"] = awardQuery.value("level").toString();
+        a["date"] = awardQuery.value("date").toString();
+        a["description"] = awardQuery.value("description").toString();
+        awards.append(a);
+    }
+    root["awards"] = awards;
+
+    // GPA 摘要
+    QJsonObject summary;
+    summary["totalGPA"] = GpaCalculator::instance().getTotalGpa();
+    summary["courseCount"] = GpaCalculator::instance().getCourseCount();
+    summary["experienceCount"] = GpaCalculator::instance().getExperienceCount();
+    summary["awardCount"] = GpaCalculator::instance().getAwardCount();
+    summary["hasInternship"] = GpaCalculator::instance().hasInternship();
+    root["summary"] = summary;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "错误", "无法创建文件");
+        return;
+    }
+    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    file.close();
+
+    QMessageBox::information(this, "导出成功",
+                             QString("数据已导出到：\n%1").arg(fileName));
+}
+
+void MainWindow::exportResume()
+{
+    QString fileName = QFileDialog::getSaveFileName(
+        this, "导出个人简历", "my_resume.html",
+        "HTML Files (*.html)");
+
+    if (fileName.isEmpty()) return;
+
+    GpaCalculator &gpa = GpaCalculator::instance();
+    double totalGpa = gpa.getTotalGpa();
+    int courseCount = gpa.getCourseCount();
+    int expCount = gpa.getExperienceCount();
+    int awardCount = gpa.getAwardCount();
+    bool hasIntern = gpa.hasInternship();
+
+    // 构建课程表格行
+    QString courseRows;
+    QSqlQuery courseQuery = gpa.getAllCourses();
+    while (courseQuery.next()) {
+        courseRows += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>")
+            .arg(courseQuery.value("name").toString())
+            .arg(courseQuery.value("credit").toDouble())
+            .arg(courseQuery.value("score").toDouble())
+            .arg(courseQuery.value("semester").toString());
+    }
+
+    // 构建经历列表
+    QString expItems;
+    QSqlQuery expQuery = gpa.getAllExperiences();
+    while (expQuery.next()) {
+        expItems += QString("<li><b>[%1] %2</b> (%3) - %4<br/>%5</li>")
+            .arg(expQuery.value("type").toString())
+            .arg(expQuery.value("title").toString())
+            .arg(expQuery.value("date").toString())
+            .arg(expQuery.value("role").toString())
+            .arg(expQuery.value("description").toString());
+    }
+
+    // 构建奖项列表
+    QString awardItems;
+    QSqlQuery awardQuery = gpa.getAllAwards();
+    while (awardQuery.next()) {
+        awardItems += QString("<li><b>%1</b> [%2] (%3) - %4</li>")
+            .arg(awardQuery.value("title").toString())
+            .arg(awardQuery.value("level").toString())
+            .arg(awardQuery.value("date").toString())
+            .arg(awardQuery.value("description").toString());
+    }
+
+    QString html = QString(R"(
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>个人简历</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; max-width: 800px; margin: 0 auto; padding: 30px; color: #333; }
+        h1 { text-align: center; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #2980b9; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-top: 25px; }
+        .summary { display: flex; justify-content: space-around; background: #ecf0f1; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .summary-item { text-align: center; }
+        .summary-item .val { font-size: 22px; font-weight: bold; color: #2c3e50; }
+        .summary-item .lbl { font-size: 12px; color: #7f8c8d; }
+        table { width: 100%%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+        th { background: #3498db; color: white; }
+        tr:nth-child(even) { background: #f2f2f2; }
+        ul { line-height: 1.8; }
+        .footer { text-align: center; color: #95a5a6; font-size: 12px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h1>个人简历</h1>
+
+    <div class="summary">
+        <div class="summary-item"><div class="val">%1</div><div class="lbl">课程数量</div></div>
+        <div class="summary-item"><div class="val">%2</div><div class="lbl">总 GPA</div></div>
+        <div class="summary-item"><div class="val">%3</div><div class="lbl">实践经历</div></div>
+        <div class="summary-item"><div class="val">%4</div><div class="lbl">获奖荣誉</div></div>
+        <div class="summary-item"><div class="val">%5</div><div class="lbl">实习经历</div></div>
+    </div>
+
+    <h2>教育背景</h2>
+    <p>本科在读 | GPA：%2</p>
+
+    <h2>课程成绩</h2>
+    <table>
+        <tr><th>课程名称</th><th>学分</th><th>成绩</th><th>学期</th></tr>
+        %6
+    </table>
+
+    <h2>实践经历</h2>
+    <ul>%7</ul>
+
+    <h2>获奖荣誉</h2>
+    <ul>%8</ul>
+
+    <div class="footer">
+        <p>本简历由「大学生个人发展规划系统」自动生成</p>
+    </div>
+</body>
+</html>
+    )").arg(courseCount)
+       .arg(totalGpa, 0, 'f', 2)
+       .arg(expCount)
+       .arg(awardCount)
+       .arg(hasIntern ? "有" : "无")
+       .arg(courseRows.isEmpty() ? "<tr><td colspan='4'>暂无课程记录</td></tr>" : courseRows)
+       .arg(expItems.isEmpty() ? "<li>暂无实践经历</li>" : expItems)
+       .arg(awardItems.isEmpty() ? "<li>暂无获奖记录</li>" : awardItems);
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "错误", "无法创建文件");
+        return;
+    }
+    QTextStream out(&file);
+    out.setCodec("UTF-8");
+    out << html;
+    file.close();
+
+    QMessageBox::information(this, "导出成功",
+                             QString("简历已导出到：\n%1").arg(fileName));
 }

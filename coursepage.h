@@ -23,8 +23,11 @@ private slots:
     void refreshGPA();
 
 private:
+    void loadCourses();
+    double calculateGPA(const QString& semester = "") const;
+
     // 输入区
-    QLineEdit *m_editName;
+    QComboBox *m_editName;
     QLineEdit *m_editCredit;
     QLineEdit *m_editScore;
     QComboBox *m_comboSemester;
@@ -38,9 +41,6 @@ private:
     // GPA显示区
     QLabel *m_labelTotalGPA;
     QLabel *m_labelCurrentGPA;
-
-    // GPA计算函数
-    double calculateGPA(const QString& semester = "") const;
 };
 
 #endif // COURSEPAGE_H

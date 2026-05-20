@@ -35,11 +35,8 @@ HEADERS += \
     databasemanager.h \
     gpacalculator.h
 
-# UI 文件
-FORMS += \
-    mainwindow.ui \
-    experiencepage.ui \
-    awardpage.ui
+# UI 文件（主窗口为纯代码实现，无需 .ui 文件）
+# FORMS +=
 
 # 编译器默认配置
 CONFIG += console

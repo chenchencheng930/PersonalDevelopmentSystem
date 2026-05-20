@@ -36,7 +36,7 @@ void DatabaseManager::addColumnIfMissing(const QString& table, const QString& co
 bool DatabaseManager::createTables() {
     if (!m_isOpen) return false;
 
-    // 1. course 表（增加 score 和 semester 列）
+    // 1. course 表（自动迁移旧表结构）
     QString sqlCourse = R"(
         CREATE TABLE IF NOT EXISTS course (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +47,24 @@ bool DatabaseManager::createTables() {
         );
     )";
     if (!executeQuery(sqlCourse)) return false;
+
+    // 兼容旧数据库：检测并移除 gradePoint 列（SQLite 需要重建表）
+    QSqlQuery checkCol = executeSelect("PRAGMA table_info(course)");
+    bool hasGradePoint = false;
+    while (checkCol.next()) {
+        if (checkCol.value(1).toString() == "gradePoint") {
+            hasGradePoint = true;
+            break;
+        }
+    }
+    if (hasGradePoint) {
+        executeQuery("ALTER TABLE course RENAME TO course_old");
+        executeQuery(sqlCourse);
+        executeQuery("INSERT INTO course (id, name, credit, score, semester) "
+                     "SELECT id, name, credit, score, semester FROM course_old");
+        executeQuery("DROP TABLE course_old");
+    }
+
     // 确保新列存在（兼容旧数据库）
     addColumnIfMissing("course", "score REAL");
     addColumnIfMissing("course", "semester TEXT");

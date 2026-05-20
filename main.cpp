@@ -6,7 +6,10 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    GpaCalculator::instance().init();
+    if (!GpaCalculator::instance().init()) {
+        qDebug() << "数据库初始化失败！";
+        return 1;
+    }
 
     MainWindow w;
     w.show();

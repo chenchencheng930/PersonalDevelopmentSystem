@@ -1,13 +1,24 @@
-﻿*.pro.user
+# Qt 用户配置文件
+*.pro.user
 *.user
-build-*/
 *.pro.user*
-.qmake.stash
-Makefile
-Makefile.*
+
+# 构建目录和产物
+build-*/
 debug/
 release/
 *.o
 *.obj
-ui_*.h
+*.exe
+Makefile
+Makefile.*
+moc_*
+ui_*
+qrc_*
+
+# Qt 缓存
+.qmake.stash
+
+# 数据库文件（本地数据，不应提交）
 *.db
+*.sqlite

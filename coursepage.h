@@ -2,43 +2,45 @@
 #define COURSEPAGE_H
 
 #include <QWidget>
-
-class QLineEdit;
-class QComboBox;
-class QPushButton;
-class QTableWidget;
-class QLabel;
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QPushButton>
+#include <QTableWidget>
+#include <QLabel>
+#include <QHeaderView>
 
 class CoursePage : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit CoursePage(QWidget *parent = nullptr);
 
 private slots:
-    void onAddCourseClicked();
-    void onDeleteCourseClicked();
-    void onRefreshCourseClicked();
+    void addCourse();
+    void deleteCourse();
+    void refreshGPA();
 
 private:
-    void updateGpaDisplay();
-    double scoreToGpa(double score) const;
+    // 输入区
+    QLineEdit *m_editName;
+    QLineEdit *m_editCredit;
+    QLineEdit *m_editScore;
+    QComboBox *m_comboSemester;
+    QPushButton *m_btnAdd;
 
-private:
-    QLineEdit *editCourseName;
-    QLineEdit *editCredit;
-    QLineEdit *editScore;
-    QComboBox *comboSemester;
+    // 表格区
+    QTableWidget *m_tableCourse;
+    QPushButton *m_btnDelete;
+    QPushButton *m_btnRefresh;
 
-    QPushButton *btnAddCourse;
-    QPushButton *btnDeleteCourse;
-    QPushButton *btnRefreshCourse;
+    // GPA显示区
+    QLabel *m_labelTotalGPA;
+    QLabel *m_labelCurrentGPA;
 
-    QTableWidget *tableCourse;
-
-    QLabel *lblTotalGpa;
-    QLabel *lblSemesterGpa;
+    // GPA计算函数
+    double calculateGPA(const QString& semester = "") const;
 };
 
 #endif // COURSEPAGE_H

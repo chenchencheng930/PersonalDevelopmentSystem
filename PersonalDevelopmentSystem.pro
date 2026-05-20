@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT += core gui widgets
+QT += core gui widgets sql
 
 # 目标配置
 TARGET = PersonalDevelopmentSystem
@@ -18,14 +18,22 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # 适配 Qt 6.0 及以上
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
+    coursepage.cpp \
     experiencepage.cpp \
-    awardpage.cpp
+    awardpage.cpp \
+    advicepage.cpp \
+    databasemanager.cpp \
+    gpacalculator.cpp
 
 # 头文件
 HEADERS += \
     mainwindow.h \
+    coursepage.h \
     experiencepage.h \
-    awardpage.h
+    awardpage.h \
+    advicepage.h \
+    databasemanager.h \
+    gpacalculator.h
 
 # UI 文件
 FORMS += \

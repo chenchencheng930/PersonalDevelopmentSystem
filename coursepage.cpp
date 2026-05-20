@@ -1,237 +1,159 @@
 #include "coursepage.h"
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
-#include <QLabel>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QPushButton>
-#include <QTableWidget>
-#include <QTableWidgetItem>
-#include <QHeaderView>
-#include <QMessageBox>
-#include <QAbstractItemView>
-
 CoursePage::CoursePage(QWidget *parent)
     : QWidget(parent)
 {
-    setMinimumSize(900, 600);
+    // -------------------------- 顶部输入区 --------------------------
+    QHBoxLayout *inputLayout = new QHBoxLayout;
+    inputLayout->setSpacing(12);
+    inputLayout->setContentsMargins(10, 10, 10, 10);
 
-    QLabel *titleLabel = new QLabel("课程与成绩管理");
-    titleLabel->setStyleSheet("font-size: 22px; font-weight: bold;");
+    inputLayout->addWidget(new QLabel("课程名"));
+    m_editName = new QLineEdit;
+    m_editName->setPlaceholderText("请输入课程名");
+    inputLayout->addWidget(m_editName, 1); // 拉伸系数1，自动占空间
 
-    QLabel *nameLabel = new QLabel("课程名：");
-    editCourseName = new QLineEdit;
-    editCourseName->setPlaceholderText("请输入课程名");
+    inputLayout->addWidget(new QLabel("学分"));
+    m_editCredit = new QLineEdit;
+    m_editCredit->setPlaceholderText("请输入学分");
+    inputLayout->addWidget(m_editCredit, 1);
 
-    QLabel *creditLabel = new QLabel("学分：");
-    editCredit = new QLineEdit;
-    editCredit->setPlaceholderText("如 3");
+    inputLayout->addWidget(new QLabel("成绩"));
+    m_editScore = new QLineEdit;
+    m_editScore->setPlaceholderText("请输入成绩");
+    inputLayout->addWidget(m_editScore, 1);
 
-    QLabel *scoreLabel = new QLabel("成绩：");
-    editScore = new QLineEdit;
-    editScore->setPlaceholderText("0-100");
+    inputLayout->addWidget(new QLabel("学期"));
+    m_comboSemester = new QComboBox;
+    m_comboSemester->addItems({
+        "大一上", "大一下",
+        "大二上", "大二下",
+        "大三上", "大三下",
+        "大四上", "大四下"
+    });
+    inputLayout->addWidget(m_comboSemester, 1);
 
-    QLabel *semesterLabel = new QLabel("学期：");
-    comboSemester = new QComboBox;
-    comboSemester->addItems(QStringList()
-                            << "大一上" << "大一下"
-                            << "大二上" << "大二下"
-                            << "大三上" << "大三下"
-                            << "大四上" << "大四下");
+    m_btnAdd = new QPushButton("添加");
+    m_btnAdd->setFixedWidth(80);
+    inputLayout->addWidget(m_btnAdd);
 
-    btnAddCourse = new QPushButton("添加课程");
+    // -------------------------- 中间表格区 --------------------------
+    m_tableCourse = new QTableWidget;
+    m_tableCourse->setColumnCount(4);
+    m_tableCourse->setHorizontalHeaderLabels({"课程名", "学分", "成绩", "学期"});
+    // 关键：列宽自动均分，窗口缩放不变形
+    m_tableCourse->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_tableCourse->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tableCourse->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    QGridLayout *inputLayout = new QGridLayout;
-    inputLayout->addWidget(nameLabel, 0, 0);
-    inputLayout->addWidget(editCourseName, 0, 1);
-    inputLayout->addWidget(creditLabel, 0, 2);
-    inputLayout->addWidget(editCredit, 0, 3);
-    inputLayout->addWidget(scoreLabel, 0, 4);
-    inputLayout->addWidget(editScore, 0, 5);
-    inputLayout->addWidget(semesterLabel, 0, 6);
-    inputLayout->addWidget(comboSemester, 0, 7);
-    inputLayout->addWidget(btnAddCourse, 0, 8);
+    // -------------------------- 底部操作+GPA区 --------------------------
+    QHBoxLayout *bottomLayout = new QHBoxLayout;
+    bottomLayout->setSpacing(20);
+    bottomLayout->setContentsMargins(10, 10, 10, 10);
 
-    inputLayout->setColumnStretch(1, 2);
-    inputLayout->setColumnStretch(3, 1);
-    inputLayout->setColumnStretch(5, 1);
-    inputLayout->setColumnStretch(7, 1);
+    m_btnDelete = new QPushButton("删除");
+    m_btnDelete->setFixedWidth(100);
+    m_btnRefresh = new QPushButton("刷新GPA");
+    m_btnRefresh->setFixedWidth(100);
 
-    tableCourse = new QTableWidget;
-    tableCourse->setColumnCount(4);
-    tableCourse->setHorizontalHeaderLabels(QStringList()
-                                           << "课程名"
-                                           << "学分"
-                                           << "成绩"
-                                           << "学期");
-    tableCourse->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    tableCourse->setSelectionBehavior(QAbstractItemView::SelectRows);
-    tableCourse->setSelectionMode(QAbstractItemView::SingleSelection);
-    tableCourse->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    bottomLayout->addWidget(m_btnDelete);
+    bottomLayout->addWidget(m_btnRefresh);
+    bottomLayout->addStretch(1); // 把GPA标签推到右侧
 
-    btnDeleteCourse = new QPushButton("删除课程");
-    btnRefreshCourse = new QPushButton("刷新");
+    m_labelTotalGPA = new QLabel("总GPA：0.00");
+    m_labelCurrentGPA = new QLabel("当前学期GPA：0.00");
+    bottomLayout->addWidget(m_labelTotalGPA);
+    bottomLayout->addWidget(m_labelCurrentGPA);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    buttonLayout->addWidget(btnDeleteCourse);
-    buttonLayout->addWidget(btnRefreshCourse);
-    buttonLayout->addStretch();
-
-    lblTotalGpa = new QLabel("总 GPA：0.00");
-    lblSemesterGpa = new QLabel("当前学期 GPA：0.00");
-
-    QHBoxLayout *gpaLayout = new QHBoxLayout;
-    gpaLayout->addWidget(lblTotalGpa);
-    gpaLayout->addSpacing(30);
-    gpaLayout->addWidget(lblSemesterGpa);
-    gpaLayout->addStretch();
-
-    QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addWidget(titleLabel);
+    // -------------------------- 主布局（核心，防止控件乱跑） --------------------------
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addLayout(inputLayout);
-    mainLayout->addWidget(tableCourse);
-    mainLayout->addLayout(buttonLayout);
-    mainLayout->addLayout(gpaLayout);
+    mainLayout->addWidget(m_tableCourse, 1); // 表格占满剩余空间
+    mainLayout->addLayout(bottomLayout);
 
-    setLayout(mainLayout);
+    setWindowTitle("课程管理与GPA计算");
+    resize(850, 600);
 
-    connect(btnAddCourse, &QPushButton::clicked,
-            this, &CoursePage::onAddCourseClicked);
-
-    connect(btnDeleteCourse, &QPushButton::clicked,
-            this, &CoursePage::onDeleteCourseClicked);
-
-    connect(btnRefreshCourse, &QPushButton::clicked,
-            this, &CoursePage::onRefreshCourseClicked);
-
-    updateGpaDisplay();
+    // 绑定按钮事件
+    connect(m_btnAdd, &QPushButton::clicked, this, &CoursePage::addCourse);
+    connect(m_btnDelete, &QPushButton::clicked, this, &CoursePage::deleteCourse);
+    connect(m_btnRefresh, &QPushButton::clicked, this, &CoursePage::refreshGPA);
 }
 
-void CoursePage::onAddCourseClicked()
+// 添加课程
+void CoursePage::addCourse()
 {
-    QString name = editCourseName->text().trimmed();
+    QString name = m_editName->text().trimmed();
+    QString creditStr = m_editCredit->text().trimmed();
+    QString scoreStr = m_editScore->text().trimmed();
+    QString semester = m_comboSemester->currentText();
 
-    bool creditOk = false;
-    bool scoreOk = false;
+    if (name.isEmpty() || creditStr.isEmpty() || scoreStr.isEmpty()) return;
 
-    double credit = editCredit->text().toDouble(&creditOk);
-    double score = editScore->text().toDouble(&scoreOk);
-    QString semester = comboSemester->currentText();
+    bool ok1, ok2;
+    double credit = creditStr.toDouble(&ok1);
+    double score = scoreStr.toDouble(&ok2);
+    if (!ok1 || !ok2 || credit <= 0 || score < 0 || score > 100) return;
 
-    if (name.isEmpty()) {
-        QMessageBox::warning(this, "输入错误", "课程名不能为空！");
-        return;
-    }
+    int row = m_tableCourse->rowCount();
+    m_tableCourse->insertRow(row);
+    m_tableCourse->setItem(row, 0, new QTableWidgetItem(name));
+    m_tableCourse->setItem(row, 1, new QTableWidgetItem(creditStr));
+    m_tableCourse->setItem(row, 2, new QTableWidgetItem(scoreStr));
+    m_tableCourse->setItem(row, 3, new QTableWidgetItem(semester));
 
-    if (!creditOk || credit <= 0) {
-        QMessageBox::warning(this, "输入错误", "学分必须是大于 0 的数字！");
-        return;
-    }
+    m_editName->clear();
+    m_editCredit->clear();
+    m_editScore->clear();
 
-    if (!scoreOk || score < 0 || score > 100) {
-        QMessageBox::warning(this, "输入错误", "成绩必须在 0 到 100 之间！");
-        return;
-    }
-
-    int row = tableCourse->rowCount();
-    tableCourse->insertRow(row);
-
-    tableCourse->setItem(row, 0, new QTableWidgetItem(name));
-    tableCourse->setItem(row, 1, new QTableWidgetItem(QString::number(credit, 'f', 1)));
-    tableCourse->setItem(row, 2, new QTableWidgetItem(QString::number(score, 'f', 1)));
-    tableCourse->setItem(row, 3, new QTableWidgetItem(semester));
-
-    editCourseName->clear();
-    editCredit->clear();
-    editScore->clear();
-
-    updateGpaDisplay();
+    refreshGPA();
 }
 
-void CoursePage::onDeleteCourseClicked()
+// 删除课程
+void CoursePage::deleteCourse()
 {
-    int row = tableCourse->currentRow();
-
-    if (row < 0) {
-        QMessageBox::warning(this, "删除失败", "请先选择要删除的课程！");
-        return;
-    }
-
-    int ret = QMessageBox::question(this,
-                                    "确认删除",
-                                    "确定要删除选中的课程吗？",
-                                    QMessageBox::Yes | QMessageBox::No);
-
-    if (ret == QMessageBox::Yes) {
-        tableCourse->removeRow(row);
-        updateGpaDisplay();
+    int row = m_tableCourse->currentRow();
+    if (row >= 0) {
+        m_tableCourse->removeRow(row);
+        refreshGPA();
     }
 }
 
-void CoursePage::onRefreshCourseClicked()
+// 刷新GPA
+void CoursePage::refreshGPA()
 {
-    updateGpaDisplay();
-    QMessageBox::information(this, "刷新成功", "课程列表已刷新。");
+    double totalGPA = calculateGPA();
+    m_labelTotalGPA->setText(QString("总GPA：%1").arg(totalGPA, 0, 'f', 2));
+
+    QString currentSemester = m_comboSemester->currentText();
+    double currentGPA = calculateGPA(currentSemester);
+    m_labelCurrentGPA->setText(QString("当前学期GPA：%1").arg(currentGPA, 0, 'f', 2));
 }
-
-double CoursePage::scoreToGpa(double score) const
-{
-    if (score >= 90) return 4.0;
-    if (score >= 85) return 3.7;
-    if (score >= 82) return 3.3;
-    if (score >= 78) return 3.0;
-    if (score >= 75) return 2.7;
-    if (score >= 72) return 2.3;
-    if (score >= 68) return 2.0;
-    if (score >= 64) return 1.5;
-    if (score >= 60) return 1.0;
-    return 0.0;
-}
-
-void CoursePage::updateGpaDisplay()
-{
-    double totalCredit = 0.0;
-    double totalPoint = 0.0;
-
-    double semesterCredit = 0.0;
-    double semesterPoint = 0.0;
-
-    QString currentSemester = comboSemester->currentText();
-
-    for (int row = 0; row < tableCourse->rowCount(); ++row) {
-        QTableWidgetItem *creditItem = tableCourse->item(row, 1);
-        QTableWidgetItem *scoreItem = tableCourse->item(row, 2);
-        QTableWidgetItem *semesterItem = tableCourse->item(row, 3);
-
-        if (!creditItem || !scoreItem || !semesterItem) {
-            continue;
-        }
-
-        double credit = creditItem->text().toDouble();
-        double score = scoreItem->text().toDouble();
-        double gpa = scoreToGpa(score);
-
-        totalCredit += credit;
-        totalPoint += credit * gpa;
-
-        if (semesterItem->text() == currentSemester) {
-            semesterCredit += credit;
-            semesterPoint += credit * gpa;
-        }
-    }
-
-    double totalGpa = 0.0;
-    if (totalCredit > 0) {
-        totalGpa = totalPoint / totalCredit;
-    }
-
-    double semesterGpa = 0.0;
-    if (semesterCredit > 0) {
-        semesterGpa = semesterPoint / semesterCredit;
-    }
-
-    lblTotalGpa->setText(QString("总 GPA：%1").arg(totalGpa, 0, 'f', 2));
-    lblSemesterGpa->setText(QString("当前学期 GPA：%1").arg(semesterGpa, 0, 'f', 2));
-}
+ // GPA计算工具函数
+ double CoursePage::calculateGPA(const QString& semester) const
+ {
+     double totalCredit = 0;
+     double totalPoint = 0;
+     for (int i = 0; i < m_tableCourse->rowCount(); ++i) {
+         if (!semester.isEmpty() && m_tableCourse->item(i, 3)->text() != semester)
+             continue;
+         double credit = m_tableCourse->item(i, 1)->text().toDouble();
+         double score = m_tableCourse->item(i, 2)->text().toDouble();
+         double gpa;
+         if (score >= 90) gpa = 4.0;
+         else if (score >= 85) gpa = 3.7;
+         else if (score >= 82) gpa = 3.3;
+         else if (score >= 78) gpa = 3.0;
+         else if (score >= 75) gpa = 2.7;
+         else if (score >= 72) gpa = 2.3;
+         else if (score >= 68) gpa = 2.0;
+         else if (score >= 64) gpa = 1.5;
+         else if (score >= 60) gpa = 1.0;
+         else gpa = 0.0;
+         totalCredit += credit;
+         totalPoint += credit * gpa;
+     }
+     return totalCredit > 0 ? totalPoint / totalCredit : 0.0;
+ }
